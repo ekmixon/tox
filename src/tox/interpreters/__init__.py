@@ -25,7 +25,7 @@ class Interpreters:
             return self.name2executable[envconfig.envname]
         except KeyError:
             exe = self.hook.tox_get_python_executable(envconfig=envconfig)
-            reporter.verbosity2("{} uses {}".format(envconfig.envname, exe))
+            reporter.verbosity2(f"{envconfig.envname} uses {exe}")
             self.name2executable[envconfig.envname] = exe
             return exe
 
@@ -46,9 +46,12 @@ class Interpreters:
             return ""
         envdir = str(envdir)
         try:
-            res = exec_on_interpreter(str(info.executable), SITE_PACKAGE_QUERY_SCRIPT, str(envdir))
+            res = exec_on_interpreter(
+                str(info.executable), SITE_PACKAGE_QUERY_SCRIPT, envdir
+            )
+
         except ExecFailed as e:
-            reporter.verbosity1("execution failed: {} -- {}".format(e.out, e.err))
+            reporter.verbosity1(f"execution failed: {e.out} -- {e.err}")
             return ""
         else:
             return res["dir"]
@@ -116,7 +119,7 @@ class InterpreterInfo:
         self.extra_version_info = extra_version_info
 
     def __str__(self):
-        return "<executable at {}, version_info {}>".format(self.executable, self.version_info)
+        return f"<executable at {self.executable}, version_info {self.version_info}>"
 
 
 class NoInterpreterInfo:
@@ -129,9 +132,9 @@ class NoInterpreterInfo:
 
     def __str__(self):
         if self.executable:
-            return "<executable at {}, not runnable>".format(self.executable)
+            return f"<executable at {self.executable}, not runnable>"
         else:
-            return "<executable not found for: {}>".format(self.name)
+            return f"<executable not found for: {self.name}>"
 
 
 if tox.INFO.IS_WIN:

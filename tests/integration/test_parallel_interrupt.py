@@ -24,8 +24,8 @@ from tox.util.main import MAIN_FILE
     reason="triggering SIGINT reliably on Windows is hard",
 )
 def test_parallel_interrupt(initproj, monkeypatch, capfd):
-    monkeypatch.setenv(str("_TOX_SKIP_ENV_CREATION_TEST"), str("1"))
-    monkeypatch.setenv(str("TOX_REPORTER_TIMESTAMP"), str("1"))
+    monkeypatch.setenv("_TOX_SKIP_ENV_CREATION_TEST", "1")
+    monkeypatch.setenv("TOX_REPORTER_TIMESTAMP", "1")
     start = datetime.now()
     initproj(
         "pkg123-0.7",
@@ -73,7 +73,7 @@ def test_parallel_interrupt(initproj, monkeypatch, capfd):
     process.send_signal(signal.CTRL_C_EVENT if sys.platform == "win32" else signal.SIGINT)
     process.wait()
     out, err = capfd.readouterr()
-    output = "{}\n{}".format(out, err)
+    output = f"{out}\n{err}"
     assert "KeyboardInterrupt parallel - stopping children" in output, output
     assert "ERROR:   a: parallel child exit code " in output, output
     assert "ERROR:   b: parallel child exit code " in output, output
@@ -86,9 +86,7 @@ def wait_for_env_startup(process):
     """the environments will write files once they are up"""
     signal_files = [Path() / "a", Path() / "b"]
     found = False
-    while True:
-        if process.poll() is not None:
-            break
+    while process.poll() is None:
         for signal_file in signal_files:
             if not signal_file.exists():
                 break

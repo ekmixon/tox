@@ -70,10 +70,11 @@ def check_os_environ_stable():
         for k in {
             PARALLEL_ENV_VAR_KEY_PRIVATE,
             PARALLEL_ENV_VAR_KEY_PUBLIC,
-            str("TOX_WORK_DIR"),
-            str("PYTHONPATH"),
+            "TOX_WORK_DIR",
+            "PYTHONPATH",
         }
     }
+
 
     yield
 
@@ -85,18 +86,21 @@ def check_os_environ_stable():
     extra = {k: new[k] for k in set(new) - set(old)}
     miss = {k: old[k] for k in set(old) - set(new)}
     diff = {
-        "{} = {} vs {}".format(k, old[k], new[k])
+        f"{k} = {old[k]} vs {new[k]}"
         for k in set(old) & set(new)
-        if old[k] != new[k] and not (k.startswith("PYTEST_") or k.startswith("COV_"))
+        if old[k] != new[k]
+        and not k.startswith("PYTEST_")
+        and not k.startswith("COV_")
     }
+
     if extra or miss or diff:
         msg = "test changed environ"
         if extra:
-            msg += " extra {}".format(extra)
+            msg += f" extra {extra}"
         if miss:
-            msg += " miss {}".format(miss)
+            msg += f" miss {miss}"
         if diff:
-            msg += " diff {}".format(diff)
+            msg += f" diff {diff}"
         pytest.fail(msg)
 
 
@@ -188,25 +192,26 @@ class RunResult:
             self.out,
             self.err,
         )
-        if six.PY2:
-            return res.encode("UTF-8")
-        else:
-            return res
+        return res.encode("UTF-8") if six.PY2 else res
 
     def output(self):
-        return "{}\n{}\n{}".format(self.ret, self.err, self.out)
+        return f"{self.ret}\n{self.err}\n{self.out}"
 
     def assert_success(self, is_run_test_env=True):
         msg = self.output()
         assert self.ret == 0, msg
         if is_run_test_env:
-            assert any("  congratulations :)" == line for line in reversed(self.outlines)), msg
+            assert any(
+                line == "  congratulations :)" for line in reversed(self.outlines)
+            ), msg
 
     def assert_fail(self, is_run_test_env=True):
         msg = self.output()
         assert self.ret, msg
         if is_run_test_env:
-            assert not any("  congratulations :)" == line for line in reversed(self.outlines)), msg
+            assert all(
+                line != "  congratulations :)" for line in reversed(self.outlines)
+            ), msg
 
 
 class ReportExpectMock:
@@ -245,7 +250,7 @@ class ReportExpectMock:
     def expect(self, cat, messagepattern="*", invert=False):
         __tracebackhide__ = True
         if not messagepattern.startswith("*"):
-            messagepattern = "*{}".format(messagepattern)
+            messagepattern = f"*{messagepattern}"
         while self._index < len(self.instance.reported_lines):
             try:
                 call = self.getnext(cat)
@@ -345,7 +350,7 @@ def getdecoded(out):
     try:
         return out.decode("utf-8")
     except UnicodeDecodeError:
-        return "INTERNAL not-utf8-decodeable, truncated string:\n{}".format(py.io.saferepr(out))
+        return f"INTERNAL not-utf8-decodeable, truncated string:\n{py.io.saferepr(out)}"
 
 
 @pytest.fixture
@@ -380,7 +385,7 @@ def initproj(tmpdir):
         if not src_root:
             src_root = "."
         if isinstance(nameversion, six.string_types):
-            parts = nameversion.rsplit(str("-"), 1)
+            parts = nameversion.rsplit("-", 1)
             if len(parts) == 1:
                 parts.append("0.1")
             name, version = parts
@@ -493,11 +498,7 @@ def create_files(base, filedefs):
             s = textwrap.dedent(value)
 
             if not isinstance(s, six.text_type):
-                if not isinstance(s, six.binary_type):
-                    s = str(s)
-                else:
-                    s = six.ensure_text(s)
-
+                s = six.ensure_text(s) if isinstance(s, six.binary_type) else str(s)
             base.join(key).write_text(s, encoding="UTF-8")
 
 
@@ -508,9 +509,8 @@ def mock_venv(monkeypatch):
     and cannot install any packages."""
 
     # first ensure we have a clean python path
-    monkeypatch.delenv(str("PYTHONPATH"), raising=False)
+    monkeypatch.delenv("PYTHONPATH", raising=False)
 
-    # object to collect some data during the execution
     class Result(object):
         def __init__(self, session):
             self.popens = popen_list
@@ -518,7 +518,6 @@ def mock_venv(monkeypatch):
 
     res = OrderedDict()
 
-    # convince tox that the current running virtual environment is already the env we would create
     class ProxyCurrentPython:
         @classmethod
         def readconfig(cls, path):

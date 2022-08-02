@@ -22,10 +22,11 @@ def test_spinner(capfd, monkeypatch):
         spin.stream.write("\n")
     out, err = capfd.readouterr()
     lines = out.split("\n")
-    expected = ["\r{}\r{} [0] ".format(spin.CLEAR_LINE, i) for i in spin.frames] + [
-        "\r{}\r{} [0] ".format(spin.CLEAR_LINE, spin.frames[0]),
-        "\r{}".format(spin.CLEAR_LINE),
+    expected = [f"\r{spin.CLEAR_LINE}\r{i} [0] " for i in spin.frames] + [
+        f"\r{spin.CLEAR_LINE}\r{spin.frames[0]} [0] ",
+        f"\r{spin.CLEAR_LINE}",
     ]
+
     assert lines == expected
 
 
@@ -72,11 +73,12 @@ def test_spinner_report(capfd, monkeypatch):
     lines = out.split(os.linesep)
     del lines[0]
     expected = [
-        "\r{}✔ OK ok in 0.0 seconds".format(spin.CLEAR_LINE),
-        "\r{}✖ FAIL fail in 0.0 seconds".format(spin.CLEAR_LINE),
-        "\r{}⚠ SKIP skip in 0.0 seconds".format(spin.CLEAR_LINE),
-        "\r{}".format(spin.CLEAR_LINE),
+        f"\r{spin.CLEAR_LINE}✔ OK ok in 0.0 seconds",
+        f"\r{spin.CLEAR_LINE}✖ FAIL fail in 0.0 seconds",
+        f"\r{spin.CLEAR_LINE}⚠ SKIP skip in 0.0 seconds",
+        f"\r{spin.CLEAR_LINE}",
     ]
+
     assert lines == expected
     assert not err
 
@@ -92,9 +94,10 @@ def test_spinner_long_text(capfd, monkeypatch):
     out, err = capfd.readouterr()
     assert not err
     expected = [
-        "\r{}\r{} [2] {} | {}...".format(spin.CLEAR_LINE, spin.frames[1], "a" * 60, "b" * 49),
-        "\r{}".format(spin.CLEAR_LINE),
+        f'\r{spin.CLEAR_LINE}\r{spin.frames[1]} [2] {"a" * 60} | {"b" * 49}...',
+        f"\r{spin.CLEAR_LINE}",
     ]
+
     lines = out.split("\n")
     del lines[0]
     assert lines == expected
@@ -130,11 +133,12 @@ def test_spinner_report_not_unicode(mocker, capfd):
     lines = "".join(args[0] for args, _ in stdout.write.call_args_list).split(os.linesep)
     del lines[0]
     expected = [
-        "\r{}[ OK ] ok! in 0.0 seconds".format(spin.CLEAR_LINE),
-        "\r{}[FAIL] fail! in 0.0 seconds".format(spin.CLEAR_LINE),
-        "\r{}[SKIP] skip! in 0.0 seconds".format(spin.CLEAR_LINE),
-        "\r{}".format(spin.CLEAR_LINE),
+        f"\r{spin.CLEAR_LINE}[ OK ] ok! in 0.0 seconds",
+        f"\r{spin.CLEAR_LINE}[FAIL] fail! in 0.0 seconds",
+        f"\r{spin.CLEAR_LINE}[SKIP] skip! in 0.0 seconds",
+        f"\r{spin.CLEAR_LINE}",
     ]
+
     assert lines == expected
 
 

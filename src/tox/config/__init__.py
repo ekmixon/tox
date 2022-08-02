@@ -55,7 +55,7 @@ hookimpl = tox.hookimpl
 # Import hookimpl directly from tox instead.
 
 
-WITHIN_PROVISION = os.environ.get(str("TOX_PROVISION")) == "1"
+WITHIN_PROVISION = os.environ.get("TOX_PROVISION") == "1"
 
 SUICIDE_TIMEOUT = 0.0
 INTERRUPT_TIMEOUT = 0.3
@@ -141,7 +141,7 @@ class Parser:
     def parse_cli(self, args, strict=False):
         args, argv = self.argparser.parse_known_args(args)
         if argv and (strict or WITHIN_PROVISION):
-            self.argparser.error("unrecognized arguments: {}".format(" ".join(argv)))
+            self.argparser.error(f'unrecognized arguments: {" ".join(argv)}')
         return args
 
     def _format_help(self):
@@ -167,8 +167,7 @@ class DepOption:
         deps = []
         config = testenv_config.config
         for depline in value:
-            m = re.match(r":(\w+):\s*(\S+)", depline)
-            if m:
+            if m := re.match(r":(\w+):\s*(\S+)", depline):
                 iname, name = m.groups()
                 ixserver = config.indexserver[iname]
             else:
@@ -179,12 +178,12 @@ class DepOption:
                 # in case of a short option, we remove the space
                 for option in tox.PIP.INSTALL_SHORT_OPTIONS_ARGUMENT:
                     if name.startswith(option):
-                        name = "{}{}".format(option, name[len(option) :].strip())
+                        name = f"{option}{name[len(option) :].strip()}"
                 # in case of a long option, we add an equal sign
                 for option in tox.PIP.INSTALL_LONG_OPTIONS_ARGUMENT:
-                    name_start = "{} ".format(option)
+                    name_start = f"{option} "
                     if name.startswith(name_start):
-                        name = "{}={}".format(option, name[len(option) :].strip())
+                        name = f"{option}={name[len(option) :].strip()}"
             name = self._cut_off_dep_comment(name)
             name = self._replace_forced_dep(name, config)
             deps.append(DepConfig(name, ixserver))
@@ -228,8 +227,7 @@ class PosargsOption:
 
     def postprocess(self, testenv_config, value):
         config = testenv_config.config
-        args = config.option.args
-        if args:
+        if args := config.option.args:
             if value:
                 args = []
                 for arg in config.option.args:
@@ -305,8 +303,7 @@ def parseconfig(args, plugins=()):
 
 def get_py_project_toml(path):
     with io.open(str(path), encoding="UTF-8") as file_handler:
-        config_data = toml.load(file_handler)
-        return config_data
+        return toml.load(file_handler)
 
 
 def propose_configs(cli_config_file):
@@ -319,9 +316,10 @@ def propose_configs(cli_config_file):
             from_folder = py.path.local(cli_config_file)
         else:
             print(
-                "ERROR: {} is neither file or directory".format(cli_config_file),
+                f"ERROR: {cli_config_file} is neither file or directory",
                 file=sys.stderr,
             )
+
             return
     for basename in INFO.CONFIG_CANDIDATES:
         if from_folder.join(basename).isfile():
@@ -351,19 +349,18 @@ def parse_cli(args, pm):
 
 
 def feedback(msg, sysexit=False):
-    print("ERROR: {}".format(msg), file=sys.stderr)
+    print(f"ERROR: {msg}", file=sys.stderr)
     if sysexit:
         raise SystemExit(1)
 
 
 def get_version_info(pm):
-    out = ["{} imported from {}".format(tox.__version__, tox.__file__)]
-    plugin_dist_info = pm.list_plugin_distinfo()
-    if plugin_dist_info:
+    out = [f"{tox.__version__} imported from {tox.__file__}"]
+    if plugin_dist_info := pm.list_plugin_distinfo():
         out.append("registered plugins:")
         for mod, egg_info in plugin_dist_info:
             source = getattr(mod, "__file__", repr(mod))
-            out.append("    {}-{} at {}".format(egg_info.project_name, egg_info.version, source))
+            out.append(f"    {egg_info.project_name}-{egg_info.version} at {source}")
     return "\n".join(out)
 
 
@@ -377,7 +374,7 @@ class SetenvDict(object):
         self._lookupstack = []
 
     def __repr__(self):
-        return "{}: {}".format(self.__class__.__name__, self.definitions)
+        return f"{self.__class__.__name__}: {self.definitions}"
 
     def __contains__(self, name):
         return name in self.definitions
@@ -750,9 +747,7 @@ def tox_addoption(parser):
     )
 
     def recreate(testenv_config, value):
-        if testenv_config.config.option.recreate:
-            return True
-        return value
+        return True if testenv_config.config.option.recreate else value
 
     parser.add_testenv_attribute(
         name="recreate",
@@ -1081,10 +1076,7 @@ class TestenvConfig:
 
     def get_envpython(self):
         """path to python/jython executable."""
-        if "jython" in str(self.basepython):
-            name = "jython"
-        else:
-            name = "python"
+        name = "jython" if "jython" in str(self.basepython) else "python"
         return self.envbindir.join(name)
 
     def get_envsitepackagesdir(self):
@@ -1092,8 +1084,9 @@ class TestenvConfig:
 
         NOTE: Only available during execution, not during parsing.
         """
-        x = self.config.interpreters.get_sitepackagesdir(info=self.python_info, envdir=self.envdir)
-        return x
+        return self.config.interpreters.get_sitepackagesdir(
+            info=self.python_info, envdir=self.envdir
+        )
 
     @property
     def python_info(self):
@@ -1110,8 +1103,9 @@ class TestenvConfig:
             raise tox.exception.InterpreterNotFound(self.basepython)
         if not info.version_info:
             raise tox.exception.InvocationError(
-                "Failed to get version_info for {}: {}".format(info.name, info.err),
+                f"Failed to get version_info for {info.name}: {info.err}"
             )
+
         return info.executable
 
 
@@ -1126,9 +1120,7 @@ def get_homedir():
 
 
 def make_hashseed():
-    max_seed = 4294967295
-    if tox.INFO.IS_WIN:
-        max_seed = 1024
+    max_seed = 1024 if tox.INFO.IS_WIN else 4294967295
     return str(random.randint(1, max_seed))
 
 

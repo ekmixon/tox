@@ -23,7 +23,10 @@ def get_package(session):
     if config.skipsdist:
         info("skipping sdist step")
         return None
-    lock_file = session.config.toxworkdir.join("{}.lock".format(session.config.isolated_build_env))
+    lock_file = session.config.toxworkdir.join(
+        f"{session.config.isolated_build_env}.lock"
+    )
+
 
     with hold_lock(lock_file, verbosity0):
         package = acquire_package(config, session)
@@ -47,7 +50,7 @@ def acquire_package(config, session):
             try:
                 sdist_file.dirpath().ensure(dir=1)
             except py.error.Error:
-                warning("could not copy distfile to {}".format(sdist_file.dirpath()))
+                warning(f"could not copy distfile to {sdist_file.dirpath()}")
             else:
                 path.copy(sdist_file)
     return path
@@ -68,6 +71,6 @@ def tox_cleanup(session):
         if hasattr(tox_env, "package") and isinstance(tox_env.package, py.path.local):
             package = tox_env.package
             if package.exists():
-                verbosity2("cleanup {}".format(package))
+                verbosity2(f"cleanup {package}")
                 package.remove()
                 py.path.local(package.dirname).remove(ignore_errors=True)

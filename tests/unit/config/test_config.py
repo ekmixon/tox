@@ -263,7 +263,7 @@ class TestConfigPlatform:
         """,
         )
         assert len(config.envconfigs) == 3
-        platform = config.envconfigs["py27-" + plat].platform
+        platform = config.envconfigs[f"py27-{plat}"].platform
         expected = {"win": "win32", "lin": "linux2", "osx": ""}.get(plat)
         assert platform == expected
 
@@ -433,7 +433,7 @@ class TestParseconfig:
 def test_get_homedir(monkeypatch):
     monkeypatch.setattr(py.path.local, "_gethomedir", classmethod(lambda x: {}[1]))
     assert not get_homedir()
-    monkeypatch.setattr(py.path.local, "_gethomedir", classmethod(lambda x: 0 / 0))
+    monkeypatch.setattr(py.path.local, "_gethomedir", classmethod(lambda x: 1))
     assert not get_homedir()
     monkeypatch.setattr(py.path.local, "_gethomedir", classmethod(lambda x: "123"))
     assert get_homedir() == "123"
@@ -1681,11 +1681,12 @@ class TestConfigTestEnv:
         envconfig = config.envconfigs["python"]
         expected_deps = [
             "some_install",
-            "--arg={}/foo".format(config.toxinidir),
+            f"--arg={config.toxinidir}/foo",
             "python",
             "{opts}",
             "{packages}",
         ]
+
         assert envconfig.install_command == expected_deps
 
     def test_install_command_substitutions_other_section(self, newconfig):
@@ -1701,11 +1702,12 @@ class TestConfigTestEnv:
         envconfig = config.envconfigs["python"]
         expected_deps = [
             "some_install",
-            "--arg={}/foo".format(config.toxinidir),
+            f"--arg={config.toxinidir}/foo",
             "python",
             "{opts}",
             "{packages}",
         ]
+
         assert envconfig.install_command == expected_deps
 
     def test_pip_pre(self, newconfig):
@@ -2038,7 +2040,7 @@ class TestConfigTestEnv:
         """
         conf = newconfig([], inisource).envconfigs["style"]
         packages = [dep.name for dep in conf.deps]
-        assert packages == []
+        assert not packages
 
         conf = newconfig([], inisource).envconfigs["py27-cover"]
         packages = [dep.name for dep in conf.deps]
@@ -2365,8 +2367,8 @@ class TestConfigTestEnv:
         assert not config.envconfigs
         assert config.envlist == ["py3-spam"]
         for x in "abcdefghij":
-            env = "py3-{}".format(x)
-            config = newconfig(["-e {}".format(env)], inisource)
+            env = f"py3-{x}"
+            config = newconfig([f"-e {env}"], inisource)
             assert sorted(config.envconfigs) == [env]
             assert config.envlist == [env]
 
@@ -2382,7 +2384,7 @@ class TestConfigTestEnv:
         conf = newconfig([], inisource)
         configs = conf.envconfigs
         for name, config in configs.items():
-            assert config.basepython == "python{}.{}".format(name[2], name[3])
+            assert config.basepython == f"python{name[2]}.{name[3]}"
 
     def test_default_factors_conflict(self, newconfig, capsys):
         with pytest.warns(UserWarning, match=r"conflicting basepython .*"):
@@ -2419,7 +2421,7 @@ class TestConfigTestEnv:
 
         monkeypatch.setattr(Interpreters, "get_executable", get_executable)
 
-        major, minor = sys.version_info[0:2]
+        major, minor = sys.version_info[:2]
         config = newconfig(
             """
             [testenv:py{0}{1}]
@@ -2443,7 +2445,7 @@ class TestConfigTestEnv:
 
         monkeypatch.setattr(Interpreters, "get_executable", get_executable)
 
-        major, minor = sys.version_info[0:2]
+        major, minor = sys.version_info[:2]
 
         with pytest.warns(None) as lying:
             config = newconfig(
@@ -2720,7 +2722,7 @@ class TestGlobalOptions:
             "pypy36": "pypy3.6",
             "jython": "jython",
         }
-        config = newconfig([], "[tox]\nenvlist={}".format(", ".join(envs)))
+        config = newconfig([], f'[tox]\nenvlist={", ".join(envs)}')
         assert set(config.envlist) == set(envs)
         for name in config.envlist:
             basepython = config.envconfigs[name].basepython
@@ -2961,7 +2963,7 @@ class TestSetenv:
         envconfig = config.envconfigs["X"]
         val = envconfig._reader.getdict_setenv("key0")
         d = {}
-        d.update(val)
+        d |= val
         assert d == {"key1": "2", "key2": "1"}
 
     def test_setenv_uses_os_environ(self, newconfig, monkeypatch):
@@ -3223,7 +3225,7 @@ class TestIndexServer:
                 pypi    = https://pypi.org/simple
         """
         config = newconfig([], inisource)
-        expected = "file://{}/.pip/downloads/simple".format(config.homedir)
+        expected = f"file://{config.homedir}/.pip/downloads/simple"
         assert config.indexserver["default"].url == expected
         assert config.indexserver["local1"].url == config.indexserver["default"].url
 
@@ -3304,7 +3306,7 @@ class TestCmdInvocation:
         initproj("help", filedefs={"tox.ini": ""})
         result = cmd("--version")
         assert not result.ret
-        assert "{} imported from".format(tox.__version__) in result.out
+        assert f"{tox.__version__} imported from" in result.out
 
     def test_version_no_plugins(self):
         pm = PluginManager("fakeprject")
@@ -3637,9 +3639,10 @@ def test_config_bad_config_type_specified(monkeypatch, tmpdir, capsys):
 
     out, err = capsys.readouterr()
     notes = (
-        "ERROR: {} is neither file or directory".format(name),
+        f"ERROR: {name} is neither file or directory",
         "ERROR: tox config file (either pyproject.toml, tox.ini, setup.cfg) not found",
     )
+
     msg = "\n".join(notes) + "\n"
     assert err == msg
     assert "ERROR:" not in out

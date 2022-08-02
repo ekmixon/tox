@@ -159,7 +159,7 @@ def test_venv_filter_match_all_none_active(venv_filter_project, monkeypatch):
 
     _, result = venv_filter_project("-avv")
     for name in existing_envs:
-        msg = "skip environment {}, matches filter '.*'".format(name)
+        msg = f"skip environment {name}, matches filter '.*'"
         assert msg in result.outlines
 
 

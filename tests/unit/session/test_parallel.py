@@ -86,7 +86,7 @@ def test_parallel_circular(cmd, initproj):
 
 @pytest.mark.parametrize("live", [True, False])
 def test_parallel_error_report(cmd, initproj, monkeypatch, live):
-    monkeypatch.setenv(str("_TOX_SKIP_ENV_CREATION_TEST"), str("1"))
+    monkeypatch.setenv("_TOX_SKIP_ENV_CREATION_TEST", "1")
     initproj(
         "pkg123-0.7",
         filedefs={
@@ -122,7 +122,7 @@ def test_parallel_error_report(cmd, initproj, monkeypatch, live):
 
 
 def test_parallel_deadlock(cmd, initproj, monkeypatch):
-    monkeypatch.setenv(str("_TOX_SKIP_ENV_CREATION_TEST"), str("1"))
+    monkeypatch.setenv("_TOX_SKIP_ENV_CREATION_TEST", "1")
     tox_ini = """\
 [tox]
 envlist = e1,e2
@@ -141,7 +141,7 @@ commands =
 
 
 def test_parallel_recreate(cmd, initproj, monkeypatch):
-    monkeypatch.setenv(str("_TOX_SKIP_ENV_CREATION_TEST"), str("1"))
+    monkeypatch.setenv("_TOX_SKIP_ENV_CREATION_TEST", "1")
     tox_ini = """\
 [tox]
 envlist = e1,e2
@@ -170,7 +170,7 @@ commands =
 
 @flaky(max_runs=3)
 def test_parallel_show_output(cmd, initproj, monkeypatch):
-    monkeypatch.setenv(str("_TOX_SKIP_ENV_CREATION_TEST"), str("1"))
+    monkeypatch.setenv("_TOX_SKIP_ENV_CREATION_TEST", "1")
     tox_ini = """\
 [tox]
 envlist = e1,e2,e3
@@ -215,21 +215,21 @@ def parallel_project(initproj):
 
 
 def test_parallel_no_spinner_on(cmd, parallel_project, monkeypatch):
-    monkeypatch.setenv(str("TOX_PARALLEL_NO_SPINNER"), str("1"))
+    monkeypatch.setenv("TOX_PARALLEL_NO_SPINNER", "1")
     result = cmd("-p", "all")
     result.assert_success()
     assert "[2] a | b" not in result.out
 
 
 def test_parallel_no_spinner_off(cmd, parallel_project, monkeypatch):
-    monkeypatch.setenv(str("TOX_PARALLEL_NO_SPINNER"), str("0"))
+    monkeypatch.setenv("TOX_PARALLEL_NO_SPINNER", "0")
     result = cmd("-p", "all")
     result.assert_success()
     assert "[2] a | b" in result.out
 
 
 def test_parallel_no_spinner_not_set(cmd, parallel_project, monkeypatch):
-    monkeypatch.delenv(str("TOX_PARALLEL_NO_SPINNER"), raising=False)
+    monkeypatch.delenv("TOX_PARALLEL_NO_SPINNER", raising=False)
     result = cmd("-p", "all")
     result.assert_success()
     assert "[2] a | b" in result.out
@@ -237,7 +237,7 @@ def test_parallel_no_spinner_not_set(cmd, parallel_project, monkeypatch):
 
 def test_parallel_result_json(cmd, parallel_project, tmp_path):
     parallel_result_json = tmp_path / "parallel.json"
-    result = cmd("-p", "all", "--result-json", "{}".format(parallel_result_json))
+    result = cmd("-p", "all", "--result-json", f"{parallel_result_json}")
     ensure_result_json_ok(result, parallel_result_json)
 
 

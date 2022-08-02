@@ -15,7 +15,7 @@ def exit_code_str(exception_name, command, exit_code):
     Even a normal method failed with "TypeError: descriptor '__getattribute__' requires a
     'BaseException' object but received a 'type'".
     """
-    str_ = "{} for command {}".format(exception_name, command)
+    str_ = f"{exception_name} for command {command}"
     if exit_code is not None:
         if exit_code < 0 or (os.name == "posix" and exit_code > 128):
             signals = {
@@ -28,8 +28,7 @@ def exit_code_str(exception_name, command, exit_code):
             else:
                 str_ += " (exited with code {:d})".format(exit_code)
                 number = exit_code - 128
-                name = signals.get(number)
-                if name:
+                if name := signals.get(number):
                     str_ += (
                         ")\nNote: this might indicate a fatal error signal "
                         "({:d} - 128 = {:d}: {})".format(exit_code, number, name)
@@ -40,7 +39,7 @@ def exit_code_str(exception_name, command, exit_code):
 
 class Error(Exception):
     def __str__(self):
-        return "{}: {}".format(self.__class__.__name__, self.args[0])
+        return f"{self.__class__.__name__}: {self.args[0]}"
 
 
 class MissingSubstitution(Error):

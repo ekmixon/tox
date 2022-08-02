@@ -14,7 +14,7 @@ from tox.util.spinner import Spinner
 def run_parallel(config, venv_dict):
     """here we'll just start parallel sub-processes"""
     live_out = config.option.parallel_live
-    disable_spinner = bool(os.environ.get("TOX_PARALLEL_NO_SPINNER") == "1")
+    disable_spinner = os.environ.get("TOX_PARALLEL_NO_SPINNER") == "1"
     args = [sys.executable, MAIN_FILE] + config.args
     try:
         position = args.index("--")

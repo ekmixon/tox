@@ -41,7 +41,7 @@ class CreationConfig:
 
     def writeconfig(self, path):
         lines = [
-            "{} {}".format(self.base_resolved_python_sha256, self.base_resolved_python_path),
+            f"{self.base_resolved_python_sha256} {self.base_resolved_python_path}",
             "{} {:d} {:d} {:d}".format(
                 self.tox_version,
                 self.sitepackages,
@@ -49,8 +49,8 @@ class CreationConfig:
                 self.alwayscopy,
             ),
         ]
-        for dep in self.deps:
-            lines.append("{} {}".format(*dep))
+
+        lines.extend("{} {}".format(*dep) for dep in self.deps)
         content = "\n".join(lines)
         path.ensure()
         path.write(content)
@@ -98,12 +98,10 @@ class CreationConfig:
         self_deps = set(self.deps)
         other_deps = set(other.deps)
         if self_deps != other_deps:
-            if deps_matches_subset:
-                diff = other_deps - self_deps
-                if diff:
-                    return False, "missing in previous {!r}".format(diff)
-            else:
+            if not deps_matches_subset:
                 return False, "{!r}!={!r}".format(self_deps, other_deps)
+            if diff := other_deps - self_deps:
+                return False, "missing in previous {!r}".format(diff)
         return True, None
 
     def matches(self, other, deps_matches_subset=False):
@@ -139,13 +137,15 @@ class VirtualEnv(object):
         )
 
     def get_result_json_path(self):
-        if self._result_json_path is None:
-            if self.envconfig.config.option.resultjson:
-                self._result_json_path = get_unique_file(
-                    self.path,
-                    PARALLEL_RESULT_JSON_PREFIX,
-                    PARALLEL_RESULT_JSON_SUFFIX,
-                )
+        if (
+            self._result_json_path is None
+            and self.envconfig.config.option.resultjson
+        ):
+            self._result_json_path = get_unique_file(
+                self.path,
+                PARALLEL_RESULT_JSON_PREFIX,
+                PARALLEL_RESULT_JSON_SUFFIX,
+            )
         return self._result_json_path
 
     @property
@@ -191,8 +191,9 @@ class VirtualEnv(object):
 
         if path is None:
             raise tox.exception.InvocationError(
-                "could not find executable {}".format(pipes.quote(name)),
+                f"could not find executable {pipes.quote(name)}"
             )
+
 
         return str(path)  # will not be rewritten for reporting
 
@@ -213,15 +214,7 @@ class VirtualEnv(object):
     def _check_external_allowed_and_warn(self, path):
         if not self.is_allowed_external(path):
             reporter.warning(
-                "test command found but not installed in testenv\n"
-                "  cmd: {}\n"
-                "  env: {}\n"
-                "Maybe you forgot to specify a dependency? "
-                "See also the allowlist_externals envconfig setting.\n\n"
-                "DEPRECATION WARNING: this will be an error in tox 4 and above!".format(
-                    path,
-                    self.envconfig.envdir,
-                ),
+                f"test command found but not installed in testenv\n  cmd: {path}\n  env: {self.envconfig.envdir}\nMaybe you forgot to specify a dependency? See also the allowlist_externals envconfig setting.\n\nDEPRECATION WARNING: this will be an error in tox 4 and above!"
             )
 
     def is_allowed_external(self, p):
@@ -251,13 +244,12 @@ class VirtualEnv(object):
         rconfig = CreationConfig.readconfig(self.path_config)
         if self.envconfig.recreate:
             reason = "-r flag"
+        elif rconfig is None:
+            reason = f"no previous config {self.path_config}"
         else:
-            if rconfig is None:
-                reason = "no previous config {}".format(self.path_config)
-            else:
-                live_config = self._getliveconfig()
-                deps_subset_match = getattr(self.envconfig, "deps_matches_subset", False)
-                outcome, reason = rconfig.matches_with_reason(live_config, deps_subset_match)
+            live_config = self._getliveconfig()
+            deps_subset_match = getattr(self.envconfig, "deps_matches_subset", False)
+            outcome, reason = rconfig.matches_with_reason(live_config, deps_subset_match)
         if reason is None:
             action.info("reusing", self.envconfig.envdir)
             return
@@ -377,13 +369,13 @@ class VirtualEnv(object):
             pip_flags = ["--exists-action", "w"]
         else:
             if is_develop and not self._needs_reinstall(dir, action):
-                action.setactivity("{}-noop".format(name), dir)
+                action.setactivity(f"{name}-noop", dir)
                 return
-            action.setactivity("{}-nodeps".format(name), dir)
+            action.setactivity(f"{name}-nodeps", dir)
             pip_flags = ["--no-deps"] + ([] if is_develop else ["-U"])
         pip_flags.extend(["-v"] * min(3, reporter.verbosity() - 2))
         if self.envconfig.extras:
-            dir += "[{}]".format(",".join(self.envconfig.extras))
+            dir += f'[{",".join(self.envconfig.extras)}]'
         target = [dir]
         if is_develop:
             target.insert(0, "-e")
@@ -407,11 +399,9 @@ class VirtualEnv(object):
         def expand(val):
             # expand an install command
             if val == "{packages}":
-                for package in packages:
-                    yield package
+                yield from packages
             elif val == "{opts}":
-                for opt in options:
-                    yield opt
+                yield from options
             else:
                 yield val
 
@@ -439,18 +429,22 @@ class VirtualEnv(object):
     def ensure_pip_os_environ_ok(self, env):
         for key in ("PIP_RESPECT_VIRTUALENV", "PIP_REQUIRE_VIRTUALENV", "__PYVENV_LAUNCHER__"):
             env.pop(key, None)
-        if all("PYTHONPATH" not in i for i in (self.envconfig.passenv, self.envconfig.setenv)):
-            # If PYTHONPATH not explicitly asked for, remove it.
-            if "PYTHONPATH" in env:
-                if sys.version_info < (3, 4) or bool(env["PYTHONPATH"]):
-                    # https://docs.python.org/3/whatsnew/3.4.html#changes-in-python-command-behavior
-                    # In a posix shell, setting the PATH environment variable to an empty value is
-                    # equivalent to not setting it at all.
-                    reporter.warning(
-                        "Discarding $PYTHONPATH from environment, to override "
-                        "specify PYTHONPATH in 'passenv' in your configuration.",
-                    )
-                env.pop("PYTHONPATH")
+        if (
+            all(
+                "PYTHONPATH" not in i
+                for i in (self.envconfig.passenv, self.envconfig.setenv)
+            )
+            and "PYTHONPATH" in env
+        ):
+            if sys.version_info < (3, 4) or bool(env["PYTHONPATH"]):
+                # https://docs.python.org/3/whatsnew/3.4.html#changes-in-python-command-behavior
+                # In a posix shell, setting the PATH environment variable to an empty value is
+                # equivalent to not setting it at all.
+                reporter.warning(
+                    "Discarding $PYTHONPATH from environment, to override "
+                    "specify PYTHONPATH in 'passenv' in your configuration.",
+                )
+            env.pop("PYTHONPATH")
 
         # installing packages at user level may mean we're not installing inside the venv
         env["PIP_USER"] = "0"
@@ -486,10 +480,12 @@ class VirtualEnv(object):
     def _get_os_environ(self, is_test_command=False):
         if is_test_command:
             # for executing tests we construct a clean environment
-            env = {}
-            for env_key in self.envconfig.passenv:
-                if env_key in os.environ:
-                    env[env_key] = os.environ[env_key]
+            env = {
+                env_key: os.environ[env_key]
+                for env_key in self.envconfig.passenv
+                if env_key in os.environ
+            }
+
         else:
             # for executing non-test commands we use the full
             # invocation environment
@@ -525,10 +521,7 @@ class VirtualEnv(object):
             for i, argv in enumerate(filter(bool, commands)):
                 # have to make strings as _pcall changes argv[0] to a local()
                 # happens if the same environment is invoked twice
-                message = "commands[{}] | {}".format(
-                    i,
-                    " ".join(pipes.quote(str(x)) for x in argv),
-                )
+                message = f'commands[{i}] | {" ".join((pipes.quote(str(x)) for x in argv))}'
                 action.setactivity(name, message)
                 # check to see if we need to ignore the return code
                 # if so, we need to alter the command line arguments
@@ -553,7 +546,7 @@ class VirtualEnv(object):
                 except tox.exception.InvocationError as err:
                     if ignore_outcome:
                         msg = "command failed but result from testenv is ignored\ncmd:"
-                        reporter.warning("{} {}".format(msg, err))
+                        reporter.warning(f"{msg} {err}")
                         self.status = "ignored failed command"
                         continue  # keep processing commands
 
@@ -585,7 +578,7 @@ class VirtualEnv(object):
         bin_dir = str(self.envconfig.envbindir)
         path = self.envconfig.setenv.get("PATH") or os.environ["PATH"]
         env["PATH"] = os.pathsep.join([bin_dir, path])
-        reporter.verbosity2("setting PATH={}".format(env["PATH"]))
+        reporter.verbosity2(f'setting PATH={env["PATH"]}')
 
         # get command
         args[0] = self.getcommandpath(args[0], venv, cwd)
@@ -609,11 +602,14 @@ class VirtualEnv(object):
                 "unresolvable substitution(s):\n    {}\n"
                 "Environment variables are missing or defined recursively.".format(
                     "\n    ".join(
-                        "{}: '{}'".format(section_key, exc.name)
-                        for section_key, exc in sorted(self.envconfig._missing_subs.items())
-                    ),
+                        f"{section_key}: '{exc.name}'"
+                        for section_key, exc in sorted(
+                            self.envconfig._missing_subs.items()
+                        )
+                    )
                 )
             )
+
             return
         if not self.matching_platform():
             self.status = "platform mismatch"
@@ -662,9 +658,7 @@ class VirtualEnv(object):
 
 def getdigest(path):
     path = py.path.local(path)
-    if not path.check(file=1):
-        return "0" * 32
-    return path.computehash("sha256")
+    return path.computehash("sha256") if path.check(file=1) else "0" * 32
 
 
 def prepend_shebang_interpreter(args):
@@ -755,16 +749,16 @@ def cleanup_for_venv(venv):
     ):
         venv.status = "error"
         reporter.error(
-            "cowardly refusing to delete `envdir` (it does not look like a virtualenv): "
-            "{}".format(venv.path),
+            f"cowardly refusing to delete `envdir` (it does not look like a virtualenv): {venv.path}"
         )
+
         raise SystemExit(2)
 
     if within_parallel:
         if venv.path.exists():
             # do not delete the log folder as that's used by parent
             for content in venv.path.listdir():
-                if not content.basename == "log":
+                if content.basename != "log":
                     content.remove(rec=1, ignore_errors=True)
     else:
         ensure_empty_dir(venv.path)
@@ -772,8 +766,7 @@ def cleanup_for_venv(venv):
 
 @tox.hookimpl
 def tox_testenv_install_deps(venv, action):
-    deps = venv.get_resolved_dependencies()
-    if deps:
+    if deps := venv.get_resolved_dependencies():
         depinfo = ", ".join(map(str, deps))
         action.setactivity("installdeps", depinfo)
         venv._install(deps, action=action)
@@ -819,5 +812,4 @@ def tox_runenvreport(venv, action):
     output = venv._pcall(args, cwd=venv.envconfig.config.toxinidir, action=action, returnout=True)
     # the output contains a mime-header, skip it
     output = output.split("\n\n")[-1]
-    packages = output.strip().split("\n")
-    return packages  # Return non-None to indicate plugin has completed
+    return output.strip().split("\n")

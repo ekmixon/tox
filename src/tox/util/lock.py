@@ -17,7 +17,7 @@ def hold_lock(lock_file, reporter=verbosity1):
         try:
             lock.acquire(0.0001)
         except Timeout:
-            reporter("lock file {} present, will block until released".format(lock_file))
+            reporter(f"lock file {lock_file} present, will block until released")
             lock.acquire()
         yield
     finally:
@@ -28,14 +28,14 @@ def get_unique_file(path, prefix, suffix):
     """get a unique file in a folder having a given prefix and suffix,
     with unique number in between"""
     lock_file = path.join(".lock")
-    prefix = "{}-".format(prefix)
+    prefix = f"{prefix}-"
     with hold_lock(lock_file):
         max_value = -1
-        for candidate in path.listdir("{}*{}".format(prefix, suffix)):
+        for candidate in path.listdir(f"{prefix}*{suffix}"):
             try:
                 max_value = max(max_value, int(candidate.basename[len(prefix) : -len(suffix)]))
             except ValueError:
                 continue
-        winner = path.join("{}{}{}".format(prefix, max_value + 1, suffix))
+        winner = path.join(f"{prefix}{max_value + 1}{suffix}")
         winner.ensure(dir=0)
         return winner

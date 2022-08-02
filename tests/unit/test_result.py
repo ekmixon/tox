@@ -101,10 +101,10 @@ def test_invocation_error(exit_code, os_name, mocker, monkeypatch):
     elif exit_code == -15:
         assert "(exited with code -15 (SIGTERM))" in result
     else:
-        assert "(exited with code {})".format(exit_code) in result
+        assert f"(exited with code {exit_code})" in result
         note = "Note: this might indicate a fatal error signal"
         if (os_name == "posix") and (exit_code == 128 + signal.SIGTERM):
             assert note in result
-            assert "({} - 128 = {}: SIGTERM)".format(exit_code, signal.SIGTERM) in result
+            assert f"({exit_code} - 128 = {signal.SIGTERM}: SIGTERM)" in result
         else:
             assert note not in result

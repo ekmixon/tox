@@ -64,7 +64,7 @@ def main(args):
     try:
         config = load_config(args)
         config.logdir.ensure(dir=1)
-        with set_os_env_var(str("TOX_WORK_DIR"), config.toxworkdir):
+        with set_os_env_var("TOX_WORK_DIR", config.toxworkdir):
             session = build_session(config)
             exit_code = session.runcommand()
         if exit_code is None:
@@ -115,10 +115,9 @@ class Session(object):
                     OrderedDict((name, v.envconfig.depends) for name, v in need_to_run.items()),
                 )
 
-                venvs = OrderedDict((v, need_to_run[v]) for v in venv_order)
-                return venvs
+                return OrderedDict((v, need_to_run[v]) for v in venv_order)
             except ValueError as exception:
-                reporter.error("circular dependency detected: {}".format(exception))
+                reporter.error(f"circular dependency detected: {exception}")
         except LookupError:
             pass
         except tox.exception.ConfigError as exception:
@@ -179,8 +178,9 @@ class Session(object):
 
     def runcommand(self):
         reporter.using(
-            "tox-{} from {} (pid {})".format(tox.__version__, tox.__file__, os.getpid()),
+            f"tox-{tox.__version__} from {tox.__file__} (pid {os.getpid()})"
         )
+
         show_description = reporter.has_level(reporter.Verbosity.DEFAULT)
         if self.config.run_provision:
             provision_tox_venv = self.getvenv(self.config.provision_tox_env)
@@ -213,7 +213,7 @@ class Session(object):
                     venv.package = self.hook.tox_package(session=self, venv=venv)
                     if not venv.package:
                         return 2
-                    venv.envconfig.setenv[str("TOX_PACKAGE")] = str(venv.package)
+                    venv.envconfig.setenv["TOX_PACKAGE"] = str(venv.package)
         if self.config.option.sdistonly:
             return
 
@@ -254,7 +254,7 @@ class Session(object):
             report = reporter.good
             status = getattr(venv, "status", "undefined")
             if isinstance(status, tox.exception.InterpreterNotFound):
-                msg = " {}: {}".format(venv.envconfig.envname, str(status))
+                msg = f" {venv.envconfig.envname}: {status}"
                 if self.config.option.skip_missing_interpreters == "true":
                     report = reporter.skip
                 else:
@@ -263,32 +263,32 @@ class Session(object):
             elif status == "platform mismatch":
                 msg = " {}: {} ({!r} does not match {!r})".format(
                     venv.envconfig.envname,
-                    str(status),
+                    status,
                     sys.platform,
                     venv.envconfig.platform,
                 )
+
                 report = reporter.skip
             elif status and status == "ignored failed command":
-                msg = "  {}: {}".format(venv.envconfig.envname, str(status))
+                msg = f"  {venv.envconfig.envname}: {status}"
             elif status and status != "skipped tests":
-                msg = "  {}: {}".format(venv.envconfig.envname, str(status))
+                msg = f"  {venv.envconfig.envname}: {status}"
                 report = reporter.error
                 exit_code = 1
             else:
                 if not status:
                     status = "commands succeeded"
-                msg = "  {}: {}".format(venv.envconfig.envname, status)
+                msg = f"  {venv.envconfig.envname}: {status}"
             if not is_parallel_child:
                 report(msg)
         if not exit_code and not is_parallel_child:
             reporter.good("  congratulations :)")
-        path = self.config.option.resultjson
-        if path:
+        if path := self.config.option.resultjson:
             if not is_parallel_child:
                 self._add_parallel_summaries()
             path = py.path.local(path)
             data = self.resultlog.dumps_json()
-            reporter.line("write json report at: {}".format(path))
+            reporter.line(f"write json report at: {path}")
             path.write(data)
         return exit_code
 

@@ -57,12 +57,9 @@ def test_separate_sdist(cmd, initproj, tmpdir):
 
     result = cmd("-v", "--notest")
     result.assert_success()
-    msg = "python inst: {}".format(result.session.package)
+    msg = f"python inst: {result.session.package}"
     assert msg in result.out, result.out
-    operation = "copied" if not hasattr(os, "link") else "links"
-    msg = "package {} {} to {}".format(
-        os.sep.join(("pkg123", ".tox", ".tmp", "package", "1", "pkg123-0.7.zip")),
-        operation,
-        os.sep.join(("distshare", "pkg123-0.7.zip")),
-    )
+    operation = "links" if hasattr(os, "link") else "copied"
+    msg = f'package {os.sep.join(("pkg123", ".tox", ".tmp", "package", "1", "pkg123-0.7.zip"))} {operation} to {os.sep.join(("distshare", "pkg123-0.7.zip"))}'
+
     assert msg in result.out, result.out

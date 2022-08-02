@@ -28,25 +28,24 @@ def get_latest_version_of_package(package_spec):
         return p
     if not p.dirpath().check(dir=1):
         raise tox.exception.MissingDirectory(p.dirpath())
-    reporter.info("determining {}".format(p))
+    reporter.info(f"determining {p}")
     candidates = p.dirpath().listdir(p.basename)
     if len(candidates) == 0:
         raise MissingDependency(package_spec)
-    if len(candidates) > 1:
-        version_package = []
-        for filename in candidates:
-            version = get_version_from_filename(filename.basename)
-            if version is not None:
-                version_package.append((version, filename))
-            else:
-                reporter.warning("could not determine version of: {}".format(str(filename)))
-        if not version_package:
-            raise tox.exception.MissingDependency(package_spec)
-        version_package.sort()
-        _, package_with_largest_version = version_package[-1]
-        return package_with_largest_version
-    else:
+    if len(candidates) <= 1:
         return candidates[0]
+    version_package = []
+    for filename in candidates:
+        version = get_version_from_filename(filename.basename)
+        if version is not None:
+            version_package.append((version, filename))
+        else:
+            reporter.warning(f"could not determine version of: {str(filename)}")
+    if not version_package:
+        raise tox.exception.MissingDependency(package_spec)
+    version_package.sort()
+    _, package_with_largest_version = version_package[-1]
+    return package_with_largest_version
 
 
 _REGEX_FILE_NAME_WITH_VERSION = re.compile(r"[\w_+.-]+-(.*)\.(zip|tar\.gz)")

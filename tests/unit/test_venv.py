@@ -318,7 +318,7 @@ def test_develop_extras(newmocksession, tmpdir):
     pcalls[:] = []
 
     venv.developpkg(tmpdir, action=action)
-    expected = "{}[testing,development]".format(tmpdir.strpath)
+    expected = f"{tmpdir.strpath}[testing,development]"
     assert expected in pcalls[-1].args
 
 
@@ -385,7 +385,9 @@ def test_test_hashseed_is_in_output(newmocksession, monkeypatch):
     with mocksession.newaction(venv.name, "update") as action:
         venv.update(action)
     tox.venv.tox_runtest_pre(venv)
-    mocksession.report.expect("verbosity0", "run-test-pre: PYTHONHASHSEED='{}'".format(seed))
+    mocksession.report.expect(
+        "verbosity0", f"run-test-pre: PYTHONHASHSEED='{seed}'"
+    )
 
 
 def test_test_runtests_action_command_is_in_output(newmocksession):
@@ -681,8 +683,11 @@ class TestVenvTest:
             sysfind_calls = []
             monkeypatch.setattr(
                 "py.path.local.sysfind",
-                classmethod(lambda *args, **kwargs: sysfind_calls.append(kwargs) or 0 / 0),
+                classmethod(
+                    lambda *args, **kwargs: sysfind_calls.append(kwargs) or 1
+                ),
             )
+
 
             with pytest.raises(ZeroDivisionError):
                 venv._install(list("123"), action=action)
@@ -857,7 +862,7 @@ def test_installpkg_no_upgrade(tmpdir, newmocksession):
 @pytest.mark.parametrize("count, level", [(0, 0), (1, 0), (2, 0), (3, 1), (4, 2), (5, 3), (6, 3)])
 def test_install_command_verbosity(tmpdir, newmocksession, count, level):
     pkg = tmpdir.ensure("package.tar.gz")
-    mock_session = newmocksession(["-{}".format("v" * count)], "")
+    mock_session = newmocksession([f'-{"v" * count}'], "")
     env = mock_session.getvenv("python")
     env.just_created = True
     env.envconfig.envdir.ensure(dir=1)
@@ -950,7 +955,7 @@ def test_command_relative_issue36(newmocksession, tmpdir, monkeypatch):
     mocksession.report.not_expect("warning", "*test command found but not*")
     monkeypatch.setenv("PATH", str(tmpdir))
     x4 = venv.getcommandpath("x", cwd=tmpdir)
-    assert x4.endswith(os.sep + "x")
+    assert x4.endswith(f"{os.sep}x")
     mocksession.report.expect("warning", "*test command found but not*")
 
 
@@ -1025,7 +1030,7 @@ def test_tox_testenv_pre_post(newmocksession):
 
     venv = mocksession.getvenv("python")
     venv.status = None
-    assert log == []
+    assert not log
     runtestenv(venv, venv.envconfig.config)
     assert log == ["started", "finished"]
 
@@ -1157,9 +1162,10 @@ def test_create_download(mocksession, newconfig, download):
         [testenv:env]
         {}
         """.format(
-            "download={}".format(download) if download else "",
+            f"download={download}" if download else ""
         ),
     )
+
     mocksession.new_config(config)
     venv = mocksession.getvenv("env")
     with mocksession.newaction(venv.name, "getenv") as action:
@@ -1194,4 +1200,4 @@ def test_path_change(tmpdir, mocksession, newconfig, monkeypatch):
     for x in pcalls:
         path = x.env["PATH"]
         assert os.environ["PATH"] in path
-        assert path.endswith(str(venv.envconfig.config.toxinidir) + "/bin")
+        assert path.endswith(f"{str(venv.envconfig.config.toxinidir)}/bin")

@@ -23,7 +23,7 @@ def test_install_via_installpkg(mock_venv, initproj, cmd):
 
 def test_installpkg(tmpdir, newconfig):
     p = tmpdir.ensure("pkg123-1.0.zip")
-    config = newconfig(["--installpkg={}".format(p)], "")
+    config = newconfig([f"--installpkg={p}"], "")
     session = Session(config)
     _, sdist_path = get_package(session)
     assert sdist_path == p
@@ -155,7 +155,7 @@ def test_build_backend_without_submodule(initproj, cmd):
 
 
 def test_package_inject(initproj, cmd, monkeypatch, tmp_path):
-    monkeypatch.delenv(str("PYTHONPATH"), raising=False)
+    monkeypatch.delenv("PYTHONPATH", raising=False)
     initproj(
         "example123-0.5",
         filedefs={

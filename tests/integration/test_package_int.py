@@ -116,8 +116,11 @@ def run(cmd, package):
     result = cmd("--sdistonly", "-e", "py", "-v", "-v")
     result.assert_success(is_run_test_env=False)
     package_venv = (Path() / ".tox" / ".package").resolve()
-    assert ".package create: {}".format(package_venv) in result.outlines, result.out
-    assert "write config to {}".format(package_venv / ".tox-config1") in result.out, result.out
+    assert f".package create: {package_venv}" in result.outlines, result.out
+    assert (
+        f'write config to {package_venv / ".tox-config1"}' in result.out
+    ), result.out
+
     package_path = (Path() / ".tox" / "dist" / package).resolve()
     assert package_path.exists()
 
@@ -128,6 +131,7 @@ def run(cmd, package):
 
     result2.assert_success(is_run_test_env=False)
     assert (
-        ".package reusing: {}".format(package_venv) in result2.outlines
-    ), "Second call output:\n{}First call output:\n{}".format(result2.out, result.out)
+        f".package reusing: {package_venv}" in result2.outlines
+    ), f"Second call output:\n{result2.out}First call output:\n{result.out}"
+
     assert package_path.exists()

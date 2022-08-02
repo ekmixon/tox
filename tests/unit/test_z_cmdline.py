@@ -56,9 +56,9 @@ class TestSession:
         assert not env2.status
         session._summary()
         out, err = capfd.readouterr()
-        exp = "{}: FAIL XYZ".format(env1.envconfig.envname)
+        exp = f"{env1.envconfig.envname}: FAIL XYZ"
         assert exp in out
-        exp = "{}: commands succeeded".format(env2.envconfig.envname)
+        exp = f"{env2.envconfig.envname}: commands succeeded"
         assert exp in out
 
     def test_getvenv(self, initproj):
@@ -241,7 +241,8 @@ def test_unknown_interpreter(cmd, initproj):
     result = cmd()
     result.assert_fail()
     assert any(
-        "ERROR: InterpreterNotFound: xyz_unknown_interpreter" == line for line in result.outlines
+        line == "ERROR: InterpreterNotFound: xyz_unknown_interpreter"
+        for line in result.outlines
     ), result.outlines
 
 
@@ -580,7 +581,7 @@ def test_result_json(cmd, initproj, example123):
     for env_data in data["testenvs"].values():
         for command_type in ("setup", "test"):
             if command_type not in env_data:
-                assert False, "missing {}".format(command_type)
+                assert False, f"missing {command_type}"
             for command in env_data[command_type]:
                 assert isinstance(command["command"], list)
                 assert command["output"]
@@ -595,7 +596,7 @@ def test_result_json(cmd, initproj, example123):
         assert isinstance(pyinfo["version_info"], list)
         assert pyinfo["version"]
         assert pyinfo["executable"]
-    assert "write json report at: {}".format(json_path) == result.outlines[-1]
+    assert f"write json report at: {json_path}" == result.outlines[-1]
 
 
 def test_developz(initproj, cmd):
@@ -697,7 +698,7 @@ def test_test_usedevelop(cmd, initproj, src_root, skipsdist):
 
     # see that things work with a different CWD
     with base.dirpath().as_cwd():
-        result = cmd("-c", "{}/tox.ini".format(name))
+        result = cmd("-c", f"{name}/tox.ini")
         result.assert_success()
         assert "develop-inst-noop" in result.out
         assert re.match(
@@ -721,7 +722,7 @@ def test_test_usedevelop(cmd, initproj, src_root, skipsdist):
 
     # test develop is called if setup.py changes
     setup_py = py.path.local("setup.py")
-    setup_py.write(setup_py.read() + " ")
+    setup_py.write(f"{setup_py.read()} ")
     result = cmd()
     result.assert_fail()
     assert "develop-inst-nodeps" in result.out

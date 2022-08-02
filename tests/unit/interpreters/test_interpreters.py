@@ -78,12 +78,15 @@ def test_tox_get_python_executable(mocker):
 @pytest.mark.skipif("sys.platform == 'win32'", reason="symlink execution unreliable on Windows")
 def test_find_alias_on_path(monkeypatch, tmp_path, mocker):
     reporter.update_default_reporter(Verbosity.DEFAULT, Verbosity.DEBUG)
-    magic = tmp_path / "magic{}".format(os.path.splitext(sys.executable)[1])
+    magic = tmp_path / f"magic{os.path.splitext(sys.executable)[1]}"
     os.symlink(sys.executable, str(magic))
     monkeypatch.setenv(
-        str("PATH"),
-        os.pathsep.join([str(tmp_path)] + os.environ.get(str("PATH"), "").split(os.pathsep)),
+        "PATH",
+        os.pathsep.join(
+            [str(tmp_path)] + os.environ.get("PATH", "").split(os.pathsep)
+        ),
     )
+
 
     class envconfig:
         basepython = "magic"
@@ -137,7 +140,7 @@ class TestInterpreters:
 
     @pytest.mark.skipif("sys.platform == 'win32'", reason="Uses a unix only wrapper")
     def test_get_info_uses_hook_path(self, tmp_path):
-        magic = tmp_path / "magic{}".format(os.path.splitext(sys.executable)[1])
+        magic = tmp_path / f"magic{os.path.splitext(sys.executable)[1]}"
         wrapper = (
             "#!{executable}\n"
             "import subprocess\n"

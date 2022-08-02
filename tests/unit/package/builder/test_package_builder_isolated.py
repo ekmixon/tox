@@ -27,12 +27,12 @@ def test_verbose_isolated_build(initproj, mock_venv, cmd):
     result = cmd("--sdistonly", "-v", "-v", "-v", "-e", "py")
     assert "running sdist" in result.out, result.out
     assert "running egg_info" in result.out, result.out
-    assert "Writing example123-0.5{}setup.cfg".format(os.sep) in result.out, result.out
+    assert f"Writing example123-0.5{os.sep}setup.cfg" in result.out, result.out
 
 
 def test_dist_exists_version_change(mock_venv, initproj, cmd):
     base = initproj(
-        "package_toml-{}".format("0.1"),
+        'package_toml-0.1',
         filedefs={
             "tox.ini": """
                 [tox]
@@ -45,6 +45,7 @@ def test_dist_exists_version_change(mock_venv, initproj, cmd):
                             """,
         },
     )
+
     result = cmd("-e", "py")
     result.assert_success()
 
@@ -67,12 +68,14 @@ def test_package_isolated_no_pyproject_toml(initproj, cmd):
     )
     result = cmd("--sdistonly", "-e", "py")
     result.assert_fail()
-    assert result.outlines == ["ERROR: missing {}".format(py.path.local().join("pyproject.toml"))]
+    assert result.outlines == [
+        f'ERROR: missing {py.path.local().join("pyproject.toml")}'
+    ]
 
 
 def toml_file_check(initproj, version, message, toml):
     initproj(
-        "package_toml-{}".format(version),
+        f"package_toml-{version}",
         filedefs={
             "tox.ini": """
                         [tox]
@@ -82,10 +85,11 @@ def toml_file_check(initproj, version, message, toml):
         },
     )
 
+
     with pytest.raises(SystemExit, match="1"):
         get_build_info(py.path.local())
     toml_file = py.path.local().join("pyproject.toml")
-    msg = "ERROR: {} inside {}".format(message, toml_file)
+    msg = f"ERROR: {message} inside {toml_file}"
     assert _INSTANCE.messages == [msg]
 
 
@@ -194,7 +198,7 @@ def test_verbose_isolated_build_in_tree(initproj, mock_venv, cmd):
     result = cmd("--sdistonly", "-v", "-v", "-v", "-e", "py")
     assert "running sdist" in result.out, result.out
     assert "running egg_info" in result.out, result.out
-    assert "Writing example123-0.5{}setup.cfg".format(os.sep) in result.out, result.out
+    assert f"Writing example123-0.5{os.sep}setup.cfg" in result.out, result.out
 
 
 def test_isolated_build_script_args(tmp_path):

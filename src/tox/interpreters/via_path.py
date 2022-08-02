@@ -19,11 +19,10 @@ def check_with_path(candidates, spec):
         base = path
         if not os.path.isabs(path):
             path = py.path.local.sysfind(path)
-        if path is not None:
-            if os.path.exists(str(path)):
-                cur_spec = exe_spec(path, base)
-                if cur_spec is not None and cur_spec.satisfies(spec):
-                    return cur_spec.path
+        if path is not None and os.path.exists(str(path)):
+            cur_spec = exe_spec(path, base)
+            if cur_spec is not None and cur_spec.satisfies(spec):
+                return cur_spec.path
 
 
 _SPECS = {}
@@ -44,7 +43,7 @@ def exe_spec(python_exe, base):
                     64 if info["is_64"] else 32,
                     info["executable"],
                 )
-                reporter.verbosity2("{} ({}) is {}".format(base, python_exe, info))
+                reporter.verbosity2(f"{base} ({python_exe}) is {info}")
             else:
                 found = None
             _SPECS[python_exe] = found
@@ -75,5 +74,5 @@ def get_python_info(cmd):
             _python_info_cache[cmd] = result
             return result.copy()
     else:
-        failure = "exit code {}".format(proc.returncode)
+        failure = f"exit code {proc.returncode}"
     reporter.verbosity1("{!r} cmd {!r} out {!r} err {!r} ".format(failure, cmd, out, err))

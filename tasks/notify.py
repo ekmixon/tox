@@ -31,7 +31,7 @@ def main() -> None:
 
 
 def get_message_body(release_version: Version, prev_version: Version) -> str:
-    is_major_release = release_version.release[0:2] != prev_version.release[0:2]
+    is_major_release = release_version.release[:2] != prev_version.release[:2]
     if is_major_release:
         return textwrap.dedent(
             f"""

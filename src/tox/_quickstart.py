@@ -105,32 +105,34 @@ def list_modificator(answer, existing=None):
 
 def do_prompt(map_, key, text, default=None, validator=nonempty, modificator=None):
     while True:
-        prompt = "> {} [{}]: ".format(text, default) if default else "> {}: ".format(text)
+        prompt = f"> {text} [{default}]: " if default else f"> {text}: "
         answer = six.moves.input(prompt)
         if default and not answer:
             answer = default
         # FIXME use six instead of self baked solution
         # noinspection PyUnresolvedReferences
-        if sys.version_info < (3,) and not isinstance(answer, unicode):  # noqa
-            # for Python 2.x, try to get a Unicode string out of it
-            if answer.decode("ascii", "replace").encode("ascii", "replace") != answer:
-                term_encoding = getattr(sys.stdin, "encoding", None)
-                if term_encoding:
-                    answer = answer.decode(term_encoding)
-                else:
-                    print(
-                        "* Note: non-ASCII characters entered but terminal encoding unknown"
-                        " -> assuming UTF-8 or Latin-1.",
-                    )
-                    try:
-                        answer = answer.decode("utf-8")
-                    except UnicodeDecodeError:
-                        answer = answer.decode("latin1")
+        if (
+            sys.version_info < (3,)
+            and not isinstance(answer, unicode)
+            and answer.decode("ascii", "replace").encode("ascii", "replace")
+            != answer
+        ):
+            if term_encoding := getattr(sys.stdin, "encoding", None):
+                answer = answer.decode(term_encoding)
+            else:
+                print(
+                    "* Note: non-ASCII characters entered but terminal encoding unknown"
+                    " -> assuming UTF-8 or Latin-1.",
+                )
+                try:
+                    answer = answer.decode("utf-8")
+                except UnicodeDecodeError:
+                    answer = answer.decode("latin1")
         if validator:
             try:
                 answer = validator(answer)
             except ValidationError as exception:
-                print("* {}".format(exception))
+                print(f"* {exception}")
                 continue
         break
     map_[key] = modificator(answer, map_.get(key)) if modificator else answer
@@ -138,7 +140,7 @@ def do_prompt(map_, key, text, default=None, validator=nonempty, modificator=Non
 
 def ask_user(map_):
     """modify *map_* in place by getting info from the user."""
-    print("Welcome to the tox {} quickstart utility.".format(tox.__version__))
+    print(f"Welcome to the tox {tox.__version__} quickstart utility.")
     print(
         "This utility will ask you a few questions and then generate a simple configuration "
         "file to help get you started using tox.\n"
@@ -179,10 +181,11 @@ def ask_user(map_):
                 do_prompt(
                     map_,
                     pyenv,
-                    "Test your project with {} (Y/n)".format(pyenv),
+                    f"Test your project with {pyenv} (Y/n)",
                     "Y",
                     validator=boolean,
                 )
+
     print(
         textwrap.dedent(
             """What command should be used to test your project? Examples:\
@@ -202,7 +205,7 @@ def ask_user(map_):
     print("What extra dependencies do your tests have?")
     map_["deps"] = get_default_deps(map_["commands"])
     if map_["deps"]:
-        print("default dependencies are: {}".format(map_["deps"]))
+        print(f'default dependencies are: {map_["deps"]}')
     do_prompt(
         map_,
         "deps",
@@ -215,9 +218,7 @@ def ask_user(map_):
 def get_default_deps(commands):
     if commands and any(c in str(commands) for c in ["pytest", "py.test"]):
         return ["pytest"]
-    if "trial" in commands:
-        return ["twisted"]
-    return []
+    return ["twisted"] if "trial" in commands else []
 
 
 def post_process_input(map_):
@@ -236,13 +237,17 @@ def generate(map_):
         targetpath = os.path.join(dpath, name)
         if not os.path.isfile(targetpath):
             break
-        do_prompt(map_, "name", "{} exists - choose an alternative".format(targetpath), altpath)
+        do_prompt(
+            map_,
+            "name",
+            f"{targetpath} exists - choose an alternative",
+            altpath,
+        )
+
     with codecs.open(targetpath, "w", encoding="utf-8") as f:
         f.write(prepare_content(QUICKSTART_CONF.format(**map_)))
         print(
-            "Finished: {} has been created. For information on this file, "
-            "see https://tox.readthedocs.io/en/latest/config.html\n"
-            "Execute `tox` to test your project.".format(targetpath),
+            f"Finished: {targetpath} has been created. For information on this file, see https://tox.readthedocs.io/en/latest/config.html\nExecute `tox` to test your project."
         )
 
 
@@ -262,10 +267,9 @@ def parse_args():
         help="Custom root directory to write config to. Defaults to current directory.",
     )
     parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s {}".format(tox.__version__),
+        "--version", action="version", version=f"%(prog)s {tox.__version__}"
     )
+
     return parser.parse_args()
 
 

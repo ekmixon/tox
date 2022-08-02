@@ -26,7 +26,7 @@ def auto_detect_cpus():
         n = cpu_count()
     except NotImplementedError:  # pragma: no cov
         n = None  # pragma: no cov
-    return n if n else 1
+    return n or 1
 
 
 def parse_num_processes(s):
@@ -34,11 +34,10 @@ def parse_num_processes(s):
         return None
     if s == "auto":
         return auto_detect_cpus()
-    else:
-        value = int(s)
-        if value < 0:
-            raise ArgumentTypeError("value must be positive")
-        return value
+    value = int(s)
+    if value < 0:
+        raise ArgumentTypeError("value must be positive")
+    return value
 
 
 def add_parallel_flags(parser):

@@ -40,7 +40,7 @@ def test_provision_min_version_is_requires(newconfig, next_tox_major):
     config = context.value.config
 
     deps = [r.name for r in config.envconfigs[config.provision_tox_env].deps]
-    assert deps == ["tox >= {}".format(next_tox_major)]
+    assert deps == [f"tox >= {next_tox_major}"]
     assert config.run_provision is True
     assert config.toxworkdir
     assert config.toxinipath
@@ -145,7 +145,7 @@ def plugin(monkeypatch, tmp_path):
     dest = tmp_path / "a"
     shutil.copytree(str(py.path.local(__file__).dirpath().join("plugin")), str(dest))
     subprocess.check_output([sys.executable, "setup.py", "egg_info"], cwd=str(dest))
-    monkeypatch.setenv(str("PYTHONPATH"), str(dest))
+    monkeypatch.setenv("PYTHONPATH", str(dest))
 
 
 def test_provision_cli_args_ignore(cmd, initproj, monkeypatch, plugin):
@@ -359,7 +359,7 @@ def test_provision_non_canonical_dep(
         space_path2url(d) for d in (tox_wheel.parent, magic_non_canonical_wheel.parent)
     )
 
-    monkeypatch.setenv(str("PIP_FIND_LINKS"), str(find_links))
+    monkeypatch.setenv("PIP_FIND_LINKS", find_links)
 
     result = cmd("-a", "-v", "-v")
     result.assert_success(is_run_test_env=False)

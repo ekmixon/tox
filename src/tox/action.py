@@ -55,7 +55,7 @@ class Action(object):
             self._install_sigterm_handler()
 
     def __enter__(self):
-        msg = "{} {}".format(self.msg, " ".join(map(str, self.args)))
+        msg = f'{self.msg} {" ".join(map(str, self.args))}'
         self._timed_report = reporter.timed_operation(self.name, msg)
         self._timed_report.__enter__()
 
@@ -67,12 +67,12 @@ class Action(object):
     def setactivity(self, name, msg):
         self.activity = name
         if msg:
-            reporter.verbosity0("{} {}: {}".format(self.name, name, msg), bold=True)
+            reporter.verbosity0(f"{self.name} {name}: {msg}", bold=True)
         else:
-            reporter.verbosity1("{} {}: {}".format(self.name, name, msg), bold=True)
+            reporter.verbosity1(f"{self.name} {name}: {msg}", bold=True)
 
     def info(self, name, msg):
-        reporter.verbosity1("{} {}: {}".format(self.name, name, msg), bold=True)
+        reporter.verbosity1(f"{self.name} {name}: {msg}", bold=True)
 
     def popen(
         self,
@@ -133,7 +133,7 @@ class Action(object):
                         if report_fail:
                             msg = "invocation failed (exit code {:d})".format(exit_code)
                             if out_path is not None:
-                                msg += ", logfile: {}".format(out_path)
+                                msg += f", logfile: {out_path}"
                                 if not out_path.exists():
                                     msg += " warning log file missing"
                             reporter.error(msg)
@@ -156,10 +156,7 @@ class Action(object):
                 buf = getattr(sys.stdout, "buffer", sys.stdout)
                 last_time = time.time()
                 while True:
-                    # we have to read one byte at a time, otherwise there
-                    # might be no output for a long time with slow tests
-                    data = input_file_handler.read(1)
-                    if data:
+                    if data := input_file_handler.read(1):
                         buf.write(data)
                         if b"\n" in data or (time.time() - last_time) > 1:
                             # we flush on newlines or after 1 second to
@@ -251,8 +248,7 @@ class Action(object):
         yield input_file_handler, out_path, stderr, stdout
 
     def get_log_path(self, actionid):
-        log_file = get_unique_file(self.log_dir, prefix=actionid, suffix=".log")
-        return log_file
+        return get_unique_file(self.log_dir, prefix=actionid, suffix=".log")
 
     def _rewrite_args(self, cwd, args):
 

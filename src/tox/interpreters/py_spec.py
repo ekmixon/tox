@@ -39,9 +39,7 @@ class PythonSpec(object):
             return False
         if req.minor is not None and req.minor != self.minor:
             return False
-        if req.major is None and req.minor is not None:
-            return False
-        return True
+        return req.major is not None or req.minor is None
 
     @property
     def is_abs(self):
@@ -52,18 +50,18 @@ class PythonSpec(object):
         name, major, minor, architecture, path = None, None, None, None, None
         if os.path.isabs(base_python):
             path = base_python
+        elif match := re.match(
+            r"(python|pypy|jython)(\d)?(?:\.(\d+))?(?:-(32|64))?$", base_python
+        ):
+            groups = match.groups()
+            name = groups[0]
+            major = int(groups[1]) if len(groups) >= 2 and groups[1] is not None else None
+            minor = int(groups[2]) if len(groups) >= 3 and groups[2] is not None else None
+            architecture = (
+                int(groups[3]) if len(groups) >= 4 and groups[3] is not None else None
+            )
         else:
-            match = re.match(r"(python|pypy|jython)(\d)?(?:\.(\d+))?(?:-(32|64))?$", base_python)
-            if match:
-                groups = match.groups()
-                name = groups[0]
-                major = int(groups[1]) if len(groups) >= 2 and groups[1] is not None else None
-                minor = int(groups[2]) if len(groups) >= 3 and groups[2] is not None else None
-                architecture = (
-                    int(groups[3]) if len(groups) >= 4 and groups[3] is not None else None
-                )
-            else:
-                path = base_python
+            path = base_python
         return cls(name, major, minor, architecture, path)
 
 

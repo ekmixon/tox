@@ -38,13 +38,13 @@ class _answers:
         return "|".join(self._inputs)
 
     def __call__(self, prompt):
-        print("prompt: '{}'".format(prompt))
+        print(f"prompt: '{prompt}'")
         try:
             answer = self._inputs.pop(0)
-            print("user answer: '{}'".format(answer))
+            print(f"user answer: '{answer}'")
             return answer
         except IndexError:
-            pytest.fail("missing user answer for '{}'".format(prompt))
+            pytest.fail(f"missing user answer for '{prompt}'")
 
 
 class _cnf:
@@ -59,7 +59,7 @@ class _cnf:
         self.pass_path = pass_path
 
     def __str__(self):
-        return self.original_name if not self.exists else str(self.names)
+        return str(self.names) if self.exists else self.original_name
 
     @property
     def argv(self):
@@ -134,114 +134,87 @@ class _exp:
 
 
 @pytest.mark.usefixtures("work_in_clean_dir")
-@pytest.mark.parametrize(
-    argnames="answers, exp, cnf",
-    ids=lambda param: str(param),
-    argvalues=(
-        (
+@pytest.mark.parametrize(argnames="answers, exp, cnf", ids=lambda param: str(param), argvalues=((
             _answers([4, "Y", "Y", "Y", "Y", "Y", "N", "pytest", "pytest"]),
             _exp(
                 "choose versions individually and use pytest",
                 [ALL_PY_ENVS_WO_LAST_AS_STRING, "pytest", "pytest"],
             ),
             _cnf(),
-        ),
-        (
+        ), (
             _answers([4, "Y", "Y", "Y", "Y", "Y", "N", "py.test", ""]),
             _exp(
                 "choose versions individually and use old fashioned py.test",
                 [ALL_PY_ENVS_WO_LAST_AS_STRING, "pytest", "py.test"],
             ),
             _cnf(),
-        ),
-        (
+        ), (
             _answers([1, "pytest", ""]),
             _exp(
                 "choose current release Python and pytest with defaut deps",
                 [tox.PYTHON.CURRENT_RELEASE_ENV, "pytest", "pytest"],
             ),
             _cnf(),
-        ),
-        (
+        ), (
             _answers([1, "pytest -n auto", "pytest-xdist"]),
             _exp(
                 "choose current release Python and pytest with xdist and some args",
                 [tox.PYTHON.CURRENT_RELEASE_ENV, "pytest, pytest-xdist", "pytest -n auto"],
             ),
             _cnf(),
-        ),
-        (
-            _answers([2, "pytest", ""]),
-            _exp(
-                "choose py27, current release Python and pytest with defaut deps",
-                ["py27, {}".format(tox.PYTHON.CURRENT_RELEASE_ENV), "pytest", "pytest"],
-            ),
-            _cnf(),
-        ),
-        (
+        ), (_answers([2, "pytest", ""]), _exp("choose py27, current release Python and pytest with defaut deps", [f"py27, {tox.PYTHON.CURRENT_RELEASE_ENV}", "pytest", "pytest"]), _cnf()), (
             _answers([3, "pytest", ""]),
             _exp("choose all supported version and pytest with defaut deps"),
             _cnf(),
-        ),
-        (
+        ), (
             _answers([4, "Y", "Y", "Y", "Y", "Y", "N", "py.test", ""]),
             _exp(
                 "choose versions individually and use old fashioned py.test",
                 [ALL_PY_ENVS_WO_LAST_AS_STRING, "pytest", "py.test"],
             ),
             _cnf(),
-        ),
-        (
+        ), (
             _answers([4, "", "", "", "", "", "", "", ""]),
             _exp("choose no version individually and defaults"),
             _cnf(),
-        ),
-        (
+        ), (
             _answers([4, "Y", "Y", "Y", "Y", "Y", "N", "python -m unittest discover", ""]),
             _exp(
                 "choose versions individually and use nose with default deps",
                 [ALL_PY_ENVS_WO_LAST_AS_STRING, "", "python -m unittest discover"],
             ),
             _cnf(),
-        ),
-        (
+        ), (
             _answers([4, "Y", "Y", "Y", "Y", "Y", "N", "nosetests", "nose"]),
             _exp(
                 "choose versions individually and use nose with default deps",
                 [ALL_PY_ENVS_WO_LAST_AS_STRING, "nose", "nosetests"],
             ),
             _cnf(),
-        ),
-        (
+        ), (
             _answers([4, "Y", "Y", "Y", "Y", "Y", "N", "trial", ""]),
             _exp(
                 "choose versions individually and use twisted tests with default deps",
                 [ALL_PY_ENVS_WO_LAST_AS_STRING, "twisted", "trial"],
             ),
             _cnf(),
-        ),
-        (
+        ), (
             _answers([4, "", "", "", "", "", "", "", ""]),
             _exp("existing not overridden, generated to alternative with default name"),
             _cnf(exists=True),
-        ),
-        (
+        ), (
             _answers([4, "", "", "", "", "", "", "", ""]),
             _exp("existing not overridden, generated to alternative with custom name"),
             _cnf(exists=True, names=["some-other.ini"]),
-        ),
-        (
+        ), (
             _answers([4, "", "", "", "", "", "", "", ""]),
             _exp("existing not override, generated to alternative"),
             _cnf(exists=True, names=["tox.ini", "some-other.ini"]),
-        ),
-        (
+        ), (
             _answers([4, "", "", "", "", "", "", "", ""]),
             _exp("existing alternatives are not overridden, generated to alternative"),
             _cnf(exists=True, names=["tox.ini", "setup.py", "some-other.ini"]),
-        ),
-    ),
-)
+        )))
 def test_quickstart(answers, cnf, exp, monkeypatch):
     """Test quickstart script using some little helpers.
 
@@ -255,7 +228,10 @@ def test_quickstart(answers, cnf, exp, monkeypatch):
         answers.extend(cnf.names)
         cnf.create()
     main()
-    print("generated config at {}:\n{}\n".format(cnf.path_to_generated, cnf.generated_content))
+    print(
+        f"generated config at {cnf.path_to_generated}:\n{cnf.generated_content}\n"
+    )
+
     check_basic_sanity(cnf.generated_content, SIGNS_OF_SANITY)
     assert cnf.generated_content == exp.content
     if cnf.exists:
@@ -265,4 +241,4 @@ def test_quickstart(answers, cnf, exp, monkeypatch):
 def check_basic_sanity(content, signs):
     for sign in signs:
         if sign not in content:
-            pytest.fail("{} not in\n{}".format(sign, content))
+            pytest.fail(f"{sign} not in\n{content}")

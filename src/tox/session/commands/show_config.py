@@ -44,7 +44,7 @@ def tox_envs_info(config, parser):
             (attr.name, str(getattr(env_config, attr.name)))
             for attr in config._parser._testenv_attr
         )
-        section = "testenv:{}".format(name)
+        section = f"testenv:{name}"
         set_section(parser, section, values)
 
 

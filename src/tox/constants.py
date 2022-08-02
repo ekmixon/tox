@@ -2,6 +2,7 @@
 
 They live in the tox namespace and can be accessed as tox.[NAMESPACE.]NAME
 """
+
 import os
 import re
 import sys
@@ -22,6 +23,8 @@ class INFO:
     CONFIG_CANDIDATES = ("pyproject.toml", "tox.ini", "setup.cfg")
     IS_WIN = sys.platform == "win32"
     IS_PYPY = hasattr(sys, "pypy_version_info")
+
+
 
 
 class PIP:
@@ -52,8 +55,9 @@ class PIP:
         "trusted-host",
         "upgrade-strategy",
     ]
-    INSTALL_SHORT_OPTIONS_ARGUMENT = ["-{}".format(option) for option in SHORT_OPTIONS]
-    INSTALL_LONG_OPTIONS_ARGUMENT = ["--{}".format(option) for option in LONG_OPTIONS]
+    INSTALL_SHORT_OPTIONS_ARGUMENT = [f"-{option}" for option in SHORT_OPTIONS]
+    INSTALL_LONG_OPTIONS_ARGUMENT = [f"--{option}" for option in LONG_OPTIONS]
+
 
 
 _HELP_DIR = os.path.join(os.path.dirname(_THIS_FILE), "helper")
